@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { httpServer, NextRequestAdapter } from "@/lib/x402";
 import { sendRefund } from "@/lib/refund";
 import { ECHO_CONFIG } from "@/lib/constants";
@@ -82,36 +82,24 @@ export async function GET(request: NextRequest) {
       const txnBytes = decodeTransaction(paymentTxnB64);
       const senderAddress = getSenderFromTransaction(txnBytes);
 
-      // Trigger the Auto-Refund
-      let refundData: Record<string, any> = {};
-      const refundStart = Date.now();
+      // Trigger the Auto-Refund in the background
+      after(async () => {
+        try {
+          const assetId = parseInt(httpResult.paymentRequirements.asset);
+          console.log(`[Background Refund] Initiating refund for sender: ${senderAddress}, amount: ${httpResult.paymentRequirements.amount}`);
+          const refundResult = await sendRefund({
+            senderAddress,
+            amount: parseInt(httpResult.paymentRequirements.amount),
+            asset: assetId,
+            network: httpResult.paymentRequirements.network,
+          });
+          console.log(`[Background Refund] Refund successful. Tx ID: ${refundResult.txId}`);
+        } catch (refundError) {
+          console.error("[Background Refund] Refund failed:", refundError);
+        }
+      });
 
-      try {
-        const assetId = parseInt(httpResult.paymentRequirements.asset);
-        const refundResult = await sendRefund({
-          senderAddress,
-          amount: parseInt(httpResult.paymentRequirements.amount),
-          asset: assetId,
-          network: httpResult.paymentRequirements.network,
-        });
-
-        refundData = {
-          refund_tx_id: refundResult.txId,
-          refund_amount: refundResult.refundAmount.toString(),
-          fee_retained: refundResult.feeRetained.toString(),
-          note: `Auto-refund sent. You paid ${refundResult.feeRetained / 1_000_000} USDC for this test.`,
-        };
-      } catch (refundError) {
-        refundData = {
-          refund_tx_id: null,
-          refund_failed: true,
-          error: refundError instanceof Error ? refundError.message : "Refund failed.",
-        };
-      }
-
-      const refundTime = Date.now() - refundStart;
-
-      // Return successful response with full diagnostics
+      // Return successful response with full diagnostics immediately
       return NextResponse.json({
         status: "success",
         echo: {
@@ -120,21 +108,21 @@ export async function GET(request: NextRequest) {
           sender: senderAddress,
           receiver: ECHO_CONFIG.receiverAddress,
           amount_received: httpResult.paymentRequirements.amount,
-          amount_refunded: refundData.refund_amount || "0",
-          fee_retained: refundData.fee_retained || httpResult.paymentRequirements.amount,
           asset: parseInt(httpResult.paymentRequirements.asset) === 0 ? "ALGO" : "USDC",
           network: httpResult.paymentRequirements.network,
           timestamp: new Date().toISOString(),
         },
-        refund: refundData,
+        refund: {
+          refund_pending: true,
+          note: "Payment verified successfully. Auto-refund initiated in the background and will arrive in 6-10 seconds.",
+        },
         diagnostics: {
           facilitator: "GoPlausible",
           verification_time_ms: verifyTime,
           settlement_time_ms: settlementTime,
-          refund_time_ms: refundTime,
           total_round_trip_ms: Date.now() - startTime,
         },
-        message: "x402 payment verified and refunded on Algorand. Your integration is working.",
+        message: "x402 payment verified on Algorand. Auto-refund is processing in the background.",
       });
     }
 
