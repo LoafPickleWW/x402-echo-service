@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
   try {
     await initServer();
 
+    console.log("Incoming request headers:", Object.fromEntries(request.headers.entries()));
+
     // Wrap the request in the GoPlausible HTTP adapter
     const adapter = new NextRequestAdapter(request);
     const requestContext = {
@@ -149,4 +151,8 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return GET(request);
 }
