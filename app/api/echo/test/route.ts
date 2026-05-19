@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       const senderAddress = getSenderFromTransaction(txnBytes);
 
       // Trigger the Auto-Refund in the background
-      after(async () => {
+      const runRefund = async () => {
         try {
           const assetId = parseInt(httpResult.paymentRequirements.asset);
           console.log(`[Background Refund] Initiating refund for sender: ${senderAddress}, amount: ${httpResult.paymentRequirements.amount}`);
@@ -97,7 +97,20 @@ export async function GET(request: NextRequest) {
         } catch (refundError) {
           console.error("[Background Refund] Refund failed:", refundError);
         }
-      });
+      };
+
+      // Safely schedule via after() if available, otherwise fire-and-forget
+      if (typeof after === "function") {
+        try {
+          after(runRefund);
+        } catch (afterError) {
+          console.warn("[Background Refund] Failed to schedule via after(), falling back to direct async execution:", afterError);
+          runRefund();
+        }
+      } else {
+        console.log("[Background Refund] after() is not a function, falling back to direct async execution");
+        runRefund();
+      }
 
       // Return successful response with full diagnostics immediately
       return NextResponse.json({
