@@ -34,13 +34,15 @@ export async function GET(request: NextRequest) {
     const httpResult = await httpServer.processHTTPRequest(requestContext);
     const verifyTime = Date.now() - verifyStart;
 
+    console.log("GoPlausible HTTP result:", JSON.stringify(httpResult, null, 2));
+
     // If payment is required or verification fails, return the 402 challenge
     if (httpResult.type === "payment-error") {
       return NextResponse.json(
         {
           status: "payment_required",
           service: ECHO_CONFIG.serviceName,
-          message: "This endpoint requires an x402 payment. Send 0.01 ALGO or 0.01 USDC.",
+          message: "This endpoint requires an x402 payment. Send 0.001 USDC.",
           payment_details: httpResult.response.body,
         },
         {
@@ -97,7 +99,7 @@ export async function GET(request: NextRequest) {
           refund_tx_id: refundResult.txId,
           refund_amount: refundResult.refundAmount.toString(),
           fee_retained: refundResult.feeRetained.toString(),
-          note: `Auto-refund sent. You paid ${refundResult.feeRetained / 1_000_000} ALGO/USDC for this test.`,
+          note: `Auto-refund sent. You paid ${refundResult.feeRetained / 1_000_000} USDC for this test.`,
         };
       } catch (refundError) {
         refundData = {

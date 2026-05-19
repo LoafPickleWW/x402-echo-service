@@ -43,30 +43,12 @@ export const routesConfig = {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
         price: {
-          asset: "0", // Native ALGO
-          amount: ECHO_CONFIG.priceAlgoMicro.toString(),
-        },
-        network: ALGORAND_MAINNET_CAIP2 as Network,
-      },
-      {
-        scheme: "exact",
-        payTo: ECHO_CONFIG.receiverAddress,
-        price: {
           asset: "31566704", // Mainnet USDC
           amount: ECHO_CONFIG.priceUsdcMicro.toString(),
         },
         network: ALGORAND_MAINNET_CAIP2 as Network,
       },
       // Testnet
-      {
-        scheme: "exact",
-        payTo: ECHO_CONFIG.receiverAddress,
-        price: {
-          asset: "0", // Native ALGO
-          amount: ECHO_CONFIG.priceAlgoMicro.toString(),
-        },
-        network: ALGORAND_TESTNET_CAIP2 as Network,
-      },
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
@@ -84,10 +66,11 @@ export const routesConfig = {
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
+        asset: "31566704", // Mainnet USDC
         price: (context: any) => {
           const countStr = context.adapter.getQueryParam ? context.adapter.getQueryParam("count") : undefined;
           const count = typeof countStr === "string" ? parseInt(countStr) : 1;
-          const price = ECHO_CONFIG.priceAlgoMicro * (isNaN(count) || count <= 0 ? 1 : count);
+          const price = ECHO_CONFIG.priceUsdcMicro * (isNaN(count) || count <= 0 ? 1 : count);
           return price.toString();
         },
         network: ALGORAND_MAINNET_CAIP2 as Network,
@@ -96,10 +79,11 @@ export const routesConfig = {
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
+        asset: "10458941", // Testnet USDC
         price: (context: any) => {
           const countStr = context.adapter.getQueryParam ? context.adapter.getQueryParam("count") : undefined;
           const count = typeof countStr === "string" ? parseInt(countStr) : 1;
-          const price = ECHO_CONFIG.priceAlgoMicro * (isNaN(count) || count <= 0 ? 1 : count);
+          const price = ECHO_CONFIG.priceUsdcMicro * (isNaN(count) || count <= 0 ? 1 : count);
           return price.toString();
         },
         network: ALGORAND_TESTNET_CAIP2 as Network,

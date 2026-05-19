@@ -11,17 +11,24 @@ export async function sendRefund(params: {
   network: string;          // "algorand:mainnet" or "algorand:testnet"
 }): Promise<{ txId: string; refundAmount: number; feeRetained: number }> {
   const { senderAddress, amount, asset, network } = params;
-  const feeRetained = ECHO_CONFIG.networkFeeMicro;  // 0.001 ALGO
+  // For USDC (non-zero asset), return the full amount back.
+  // For native ALGO (asset 0), retain the network fee.
+  const feeRetained = asset === 0 ? ECHO_CONFIG.networkFeeMicro : 0;
   const refundAmount = amount - feeRetained;
+  const assetLabel = asset === 0 ? "microALGO" : "micro-USDC";
 
   if (refundAmount <= 0) {
     throw new Error(
-      `Payment of ${amount} microALGO is too small. ` +
-      `Minimum payment: ${feeRetained + 1} microALGO to cover network fee + refund.`
+      `Payment of ${amount} ${assetLabel} is too small. ` +
+      `Minimum payment: ${feeRetained + 1} ${assetLabel} to cover network fee + refund.`
     );
   }
 
-  // 1. Create an Algod client dynamically
+  // 1. Wait 6 seconds to allow the settlement transaction to be fully committed and indexed by the node
+  // preventing the 'underflow on subtracting ... from sender amount 0' pool validation race condition.
+  await new Promise((resolve) => setTimeout(resolve, 6000));
+
+  // 2. Create an Algod client dynamically
   const isTestnet = network.includes("testnet");
   const algodServer = isTestnet
     ? "https://testnet-api.4160.nodely.dev"

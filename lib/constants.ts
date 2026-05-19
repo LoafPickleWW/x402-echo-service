@@ -8,10 +8,10 @@ export const ECHO_CONFIG = {
 
   // Pricing (in microunits)
   priceAlgoMicro: 10_000,      // 0.01 ALGO
-  priceUsdcMicro: 10_000,      // 0.01 USDC (6 decimals)
+  priceUsdcMicro: 1_000,      // 0.001 USDC (6 decimals)
 
   // Network fee retained on refunds
-  networkFeeMicro: 1_000,      // 0.001 ALGO
+  networkFeeMicro: 100,      // 0.0001 ALGO
 
   receiverAddress: "X4O22L6VU7UUUB5QNHHNMGZIQMG44MF4TVMMKOLXJLAUXHUQT3JLG5CZCI",
   
