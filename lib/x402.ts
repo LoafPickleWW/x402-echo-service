@@ -4,8 +4,26 @@ import { ECHO_CONFIG } from "./constants";
 import { NextRequest } from "next/server";
 import { Network } from "@x402-avm/core/types";
 
+class MultiNetworkFacilitatorClient extends HTTPFacilitatorClient {
+  async verify(paymentPayload: any, paymentRequirements: any) {
+    const isTestnet = paymentRequirements?.network?.includes("testnet");
+    (this as any).url = isTestnet 
+      ? "https://testnet.facilitator.goplausible.xyz" 
+      : "https://facilitator.goplausible.xyz";
+    return super.verify(paymentPayload, paymentRequirements);
+  }
+
+  async settle(paymentPayload: any, paymentRequirements: any) {
+    const isTestnet = paymentRequirements?.network?.includes("testnet");
+    (this as any).url = isTestnet 
+      ? "https://testnet.facilitator.goplausible.xyz" 
+      : "https://facilitator.goplausible.xyz";
+    return super.settle(paymentPayload, paymentRequirements);
+  }
+}
+
 // Initialize facilitator client
-const facilitatorClient = new HTTPFacilitatorClient({
+const facilitatorClient = new MultiNetworkFacilitatorClient({
   url: ECHO_CONFIG.facilitatorUrl,
 });
 

@@ -5,7 +5,7 @@ export async function GET() {
   return NextResponse.json({
     status: "live",
     service: ECHO_CONFIG.serviceName,
-    chain: ECHO_CONFIG.chain,
+    chains: ["algorand:mainnet", "algorand:testnet"],
     accepted_tokens: ["ALGO", "USDC"],
     price_algo: ECHO_CONFIG.priceAlgoMicro / 1_000_000,
     price_usdc: ECHO_CONFIG.priceUsdcMicro / 1_000_000,
