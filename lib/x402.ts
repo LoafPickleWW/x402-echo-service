@@ -1,12 +1,13 @@
 import { x402ResourceServer, HTTPFacilitatorClient, x402HTTPResourceServer } from "@x402-avm/core/server";
 import { registerExactAvmScheme } from "@x402-avm/avm/exact/server";
+import { ALGORAND_MAINNET_CAIP2, ALGORAND_TESTNET_CAIP2 } from "@x402-avm/avm";
 import { ECHO_CONFIG } from "./constants";
 import { NextRequest } from "next/server";
 import { Network } from "@x402-avm/core/types";
 
 class MultiNetworkFacilitatorClient extends HTTPFacilitatorClient {
   async verify(paymentPayload: any, paymentRequirements: any) {
-    const isTestnet = paymentRequirements?.network?.includes("testnet");
+    const isTestnet = paymentRequirements?.network?.includes("testnet") || paymentRequirements?.network?.includes("SGO1");
     (this as any).url = isTestnet 
       ? "https://testnet.facilitator.goplausible.xyz" 
       : "https://facilitator.goplausible.xyz";
@@ -14,7 +15,7 @@ class MultiNetworkFacilitatorClient extends HTTPFacilitatorClient {
   }
 
   async settle(paymentPayload: any, paymentRequirements: any) {
-    const isTestnet = paymentRequirements?.network?.includes("testnet");
+    const isTestnet = paymentRequirements?.network?.includes("testnet") || paymentRequirements?.network?.includes("SGO1");
     (this as any).url = isTestnet 
       ? "https://testnet.facilitator.goplausible.xyz" 
       : "https://facilitator.goplausible.xyz";
@@ -30,7 +31,7 @@ const facilitatorClient = new MultiNetworkFacilitatorClient({
 // Create and configure x402 resource server
 const server = new x402ResourceServer(facilitatorClient);
 registerExactAvmScheme(server, {
-  networks: ['algorand:mainnet' as Network, 'algorand:testnet' as Network],
+  networks: [ALGORAND_MAINNET_CAIP2 as Network, ALGORAND_TESTNET_CAIP2 as Network],
 });
 
 // Define routes configuration for x402 HTTP resource server
@@ -45,7 +46,7 @@ export const routesConfig = {
           asset: "0", // Native ALGO
           amount: ECHO_CONFIG.priceAlgoMicro.toString(),
         },
-        network: "algorand:mainnet" as Network,
+        network: ALGORAND_MAINNET_CAIP2 as Network,
       },
       {
         scheme: "exact",
@@ -54,7 +55,7 @@ export const routesConfig = {
           asset: "31566704", // Mainnet USDC
           amount: ECHO_CONFIG.priceUsdcMicro.toString(),
         },
-        network: "algorand:mainnet" as Network,
+        network: ALGORAND_MAINNET_CAIP2 as Network,
       },
       // Testnet
       {
@@ -64,7 +65,7 @@ export const routesConfig = {
           asset: "0", // Native ALGO
           amount: ECHO_CONFIG.priceAlgoMicro.toString(),
         },
-        network: "algorand:testnet" as Network,
+        network: ALGORAND_TESTNET_CAIP2 as Network,
       },
       {
         scheme: "exact",
@@ -73,7 +74,7 @@ export const routesConfig = {
           asset: "10458941", // Testnet USDC
           amount: ECHO_CONFIG.priceUsdcMicro.toString(),
         },
-        network: "algorand:testnet" as Network,
+        network: ALGORAND_TESTNET_CAIP2 as Network,
       }
     ]
   },
@@ -89,7 +90,7 @@ export const routesConfig = {
           const price = ECHO_CONFIG.priceAlgoMicro * (isNaN(count) || count <= 0 ? 1 : count);
           return price.toString();
         },
-        network: "algorand:mainnet" as Network,
+        network: ALGORAND_MAINNET_CAIP2 as Network,
       },
       // Testnet
       {
@@ -101,7 +102,7 @@ export const routesConfig = {
           const price = ECHO_CONFIG.priceAlgoMicro * (isNaN(count) || count <= 0 ? 1 : count);
           return price.toString();
         },
-        network: "algorand:testnet" as Network,
+        network: ALGORAND_TESTNET_CAIP2 as Network,
       }
     ]
   }
