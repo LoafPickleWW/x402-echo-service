@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { httpServer, NextRequestAdapter } from "@/lib/x402";
 import { sendRefund } from "@/lib/refund";
 import { ECHO_CONFIG } from "@/lib/constants";
 import { decodeTransaction, getSenderFromTransaction } from "@x402-avm/avm";
+
+let after: any;
+try {
+  const nextServer = require("next/server");
+  after = nextServer.after || nextServer.unstable_after;
+} catch {}
 
 let isInitialized = false;
 async function initServer() {
