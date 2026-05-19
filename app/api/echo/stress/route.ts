@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
           status: "payment_required",
           service: ECHO_CONFIG.serviceName,
           message: `This endpoint requires an x402 payment for stress testing. Price: ${
-            (ECHO_CONFIG.priceAlgoMicro * safeCount) / 1_000_000
-          } ALGO.`,
+            (ECHO_CONFIG.priceUsdcMicro * safeCount) / 1_000_000
+          } USDC.`,
           payment_details: httpResult.response.body,
         },
         {
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
           refund_tx_id: refundResult.txId,
           refund_amount: refundResult.refundAmount.toString(),
           fee_retained: refundResult.feeRetained.toString(),
-          note: `Auto-refund sent. You paid ${refundResult.feeRetained / 1_000_000} ALGO/USDC for this test.`,
+          note: `Auto-refund sent. You paid ${refundResult.feeRetained / 1_000_000} USDC for this test.`,
         };
       } catch (refundError) {
         refundData = {
