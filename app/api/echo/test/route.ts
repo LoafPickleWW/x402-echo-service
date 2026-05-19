@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         {
           status: "payment_required",
           service: ECHO_CONFIG.serviceName,
-          message: "This endpoint requires an x402 payment. Send 0.001 USDC.",
+          message: "This endpoint requires an x402 payment. Send 0.01 USDC.",
           payment_details: httpResult.response.body,
         },
         {
