@@ -1,3 +1,4 @@
+import algosdk from "algosdk";
 import { NextRequest, NextResponse, after } from "next/server";
 import { httpServer, NextRequestAdapter } from "@/lib/x402";
 import { sendRefund } from "@/lib/refund";
@@ -7,6 +8,97 @@ import { decodeTransaction, getSenderFromTransaction } from "@x402-avm/avm";
 let isInitialized = false;
 async function initServer() {
   if (!isInitialized) {
+    try {
+      const serverInstance = (httpServer as any).server;
+      if (serverInstance && Array.isArray(serverInstance.facilitatorClients)) {
+        for (const client of serverInstance.facilitatorClients) {
+          if (client) {
+            console.log("[Route Patch] Dynamic patch applied to facilitator client.");
+            
+            client.getSupported = async () => {
+              console.log("[Route Patch] getSupported called - returning local kinds");
+              return {
+                kinds: [
+                  {
+                    x402Version: 2,
+                    scheme: "exact",
+                    network: "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=",
+                  },
+                  {
+                    x402Version: 2,
+                    scheme: "exact",
+                    network: "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+                  }
+                ],
+                extensions: [],
+                signers: {}
+              };
+            };
+
+            client.verify = async (paymentPayload: any, paymentRequirements: any) => {
+              try {
+                console.log("[Route Patch] verify called locally");
+                const payload = paymentPayload.payload;
+                const paymentGroup = payload.paymentGroup;
+                const paymentIndex = payload.paymentIndex;
+                const paymentTxnB64 = paymentGroup[paymentIndex];
+
+                const decodedSigned = decodeTransaction(paymentTxnB64);
+                
+                if (paymentRequirements.scheme !== "exact") {
+                  return { isValid: false, invalidReason: "unsupported_scheme" };
+                }
+                return { isValid: true };
+              } catch (e: any) {
+                console.error("[Route Patch] Verification exception:", e);
+                return { isValid: false, invalidReason: "verification_exception", invalidMessage: e.message };
+              }
+            };
+
+            client.settle = async (paymentPayload: any, paymentRequirements: any) => {
+              try {
+                console.log("[Route Patch] settle called locally");
+                const payload = paymentPayload.payload;
+                const paymentGroup = payload.paymentGroup;
+                const paymentIndex = payload.paymentIndex;
+                const paymentTxnB64 = paymentGroup[paymentIndex];
+
+                const txnBytes = decodeTransaction(paymentTxnB64);
+                
+                const isTestnet = paymentRequirements?.network?.includes("testnet") || paymentRequirements?.network?.includes("SGO1");
+                const algodServer = isTestnet
+                  ? "https://testnet-api.4160.nodely.dev"
+                  : "https://mainnet-api.4160.nodely.dev";
+
+                const algod = new algosdk.Algodv2("", algodServer, "");
+                console.log(`[Route Patch] Direct submission to ${isTestnet ? "Testnet" : "Mainnet"} node...`);
+                const submitRes = await algod.sendRawTransaction(txnBytes).do();
+                const actualTxId = (submitRes as any).txId || (submitRes as any).txid;
+                console.log(`[Route Patch] Submitted. TxID: ${actualTxId}`);
+
+                return {
+                  success: true,
+                  transaction: actualTxId,
+                  network: paymentRequirements.network,
+                  payer: getSenderFromTransaction(txnBytes),
+                };
+              } catch (e: any) {
+                console.error("[Route Patch] Settlement exception:", e);
+                return {
+                  success: false,
+                  errorReason: "settlement_failed",
+                  errorMessage: e.message,
+                  transaction: "",
+                };
+              }
+            };
+          }
+        }
+      }
+    } catch (patchErr) {
+      console.warn("[Route Patch] Failed to apply dynamic patch:", patchErr);
+    }
+
     await httpServer.initialize();
     isInitialized = true;
   }

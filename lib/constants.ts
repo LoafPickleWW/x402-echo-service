@@ -26,5 +26,8 @@ export const ECHO_CONFIG = {
   algodToken: process.env.ALGOD_TOKEN || "",
   
   usdcAsaId: parseInt(process.env.USDC_ASA_ID || (isTestnet ? "10458941" : "31566704")),
+
+  // Info URL for agent marketplace discovery
+  infoUrl: process.env.INFO_URL || "https://github.com/LoafPickleWW/x402-echo-service",
 };
 

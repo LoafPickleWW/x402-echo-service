@@ -9,6 +9,7 @@ export async function GET() {
     accepted_tokens: ["USDC"],
     price_usdc: ECHO_CONFIG.priceUsdcMicro / 1_000_000,
     version: ECHO_CONFIG.version,
+    info_url: ECHO_CONFIG.infoUrl,
     timestamp: new Date().toISOString(),
   });
 }
