@@ -8,6 +8,7 @@ import { decodeTransaction, getSenderFromTransaction } from "@x402-avm/avm";
 let isInitialized = false;
 async function initServer() {
   if (!isInitialized) {
+    /*
     try {
       const serverInstance = (httpServer as any).server;
       if (serverInstance && Array.isArray(serverInstance.facilitatorClients)) {
@@ -98,6 +99,7 @@ async function initServer() {
     } catch (patchErr) {
       console.warn("[Route Patch] Failed to apply dynamic patch:", patchErr);
     }
+    */
 
     await httpServer.initialize();
     isInitialized = true;
