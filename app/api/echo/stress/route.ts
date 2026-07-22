@@ -8,6 +8,7 @@ import { decodeTransaction, getSenderFromTransaction } from "@x402-avm/avm";
 let isInitialized = false;
 async function initServer() {
   if (!isInitialized) {
+    /*
     try {
       const serverInstance = (httpServer as any).server;
       if (serverInstance && Array.isArray(serverInstance.facilitatorClients)) {
@@ -98,6 +99,7 @@ async function initServer() {
     } catch (patchErr) {
       console.warn("[Route Patch] Failed to apply dynamic patch:", patchErr);
     }
+    */
 
     await httpServer.initialize();
     isInitialized = true;
@@ -115,6 +117,7 @@ export async function GET(request: NextRequest) {
 
     // Wrap request in GoPlausible adapter
     const adapter = new NextRequestAdapter(request);
+    console.log("[Stress API] Incoming request headers:", Object.fromEntries(request.headers.entries()));
     const requestContext = {
       adapter,
       path: adapter.getPath(),
@@ -126,6 +129,7 @@ export async function GET(request: NextRequest) {
     const verifyStart = Date.now();
     const httpResult = await httpServer.processHTTPRequest(requestContext);
     const verifyTime = Date.now() - verifyStart;
+    console.log("[Stress API] httpResult:", JSON.stringify(httpResult, null, 2));
 
     // If payment required or fails, return 402 challenge
     if (httpResult.type === "payment-error") {

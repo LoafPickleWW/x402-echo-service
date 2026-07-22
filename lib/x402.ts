@@ -6,6 +6,72 @@ import { NextRequest } from "next/server";
 import { Network } from "@x402-avm/core/types";
 
 class MultiNetworkFacilitatorClient extends HTTPFacilitatorClient {
+  async getSupported() {
+    const mainnetUrl = "https://facilitator.goplausible.xyz";
+    const testnetUrl = "https://testnet.facilitator.goplausible.xyz";
+
+    const fetchSupported = async (url: string) => {
+      const headers = { "Content-Type": "application/json" };
+      const response = await fetch(`${url}/supported`, {
+        method: "GET",
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch supported from ${url}: ${response.statusText}`);
+      }
+      return response.json();
+    };
+
+    try {
+      const [mainnetRes, testnetRes] = await Promise.all([
+        fetchSupported(mainnetUrl).catch(err => {
+          console.warn("[MultiNetworkFacilitatorClient] Mainnet getSupported failed:", err);
+          return null;
+        }),
+        fetchSupported(testnetUrl).catch(err => {
+          console.warn("[MultiNetworkFacilitatorClient] Testnet getSupported failed:", err);
+          return null;
+        })
+      ]);
+
+      const kinds = [];
+      const extensions = [];
+      const signers: Record<string, any> = {};
+
+      if (mainnetRes && Array.isArray(mainnetRes.kinds)) {
+        kinds.push(...mainnetRes.kinds);
+      }
+      if (testnetRes && Array.isArray(testnetRes.kinds)) {
+        kinds.push(...testnetRes.kinds);
+      }
+      if (mainnetRes && Array.isArray(mainnetRes.extensions)) {
+        extensions.push(...mainnetRes.extensions);
+      }
+      if (testnetRes && Array.isArray(testnetRes.extensions)) {
+        for (const ext of testnetRes.extensions) {
+          if (!extensions.includes(ext)) {
+            extensions.push(ext);
+          }
+        }
+      }
+      if (mainnetRes && mainnetRes.signers) {
+        Object.assign(signers, mainnetRes.signers);
+      }
+      if (testnetRes && testnetRes.signers) {
+        Object.assign(signers, testnetRes.signers);
+      }
+
+      return {
+        kinds,
+        extensions,
+        signers,
+      };
+    } catch (e) {
+      console.error("[MultiNetworkFacilitatorClient] Error merging getSupported:", e);
+      return super.getSupported();
+    }
+  }
+
   async verify(paymentPayload: any, paymentRequirements: any) {
     const isTestnet = paymentRequirements?.network?.includes("testnet") || paymentRequirements?.network?.includes("SGO1");
     (this as any).url = isTestnet 
@@ -42,9 +108,14 @@ export const routesConfig = {
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
-        price: {
-          asset: "31566704", // Mainnet USDC
-          amount: ECHO_CONFIG.priceUsdcMicro.toString(),
+        price: (context: any) => {
+          const amountStr = context.adapter.getQueryParam ? context.adapter.getQueryParam("amount") : undefined;
+          const amount = typeof amountStr === "string" ? parseInt(amountStr) : ECHO_CONFIG.priceUsdcMicro;
+          const price = isNaN(amount) || amount <= 0 ? ECHO_CONFIG.priceUsdcMicro : amount;
+          return {
+            asset: "31566704",
+            amount: price.toString(),
+          };
         },
         network: ALGORAND_MAINNET_CAIP2 as Network,
       },
@@ -52,9 +123,14 @@ export const routesConfig = {
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
-        price: {
-          asset: "10458941", // Testnet USDC
-          amount: ECHO_CONFIG.priceUsdcMicro.toString(),
+        price: (context: any) => {
+          const amountStr = context.adapter.getQueryParam ? context.adapter.getQueryParam("amount") : undefined;
+          const amount = typeof amountStr === "string" ? parseInt(amountStr) : ECHO_CONFIG.priceUsdcMicro;
+          const price = isNaN(amount) || amount <= 0 ? ECHO_CONFIG.priceUsdcMicro : amount;
+          return {
+            asset: "10458941",
+            amount: price.toString(),
+          };
         },
         network: ALGORAND_TESTNET_CAIP2 as Network,
       }
@@ -66,12 +142,14 @@ export const routesConfig = {
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
-        asset: "31566704", // Mainnet USDC
         price: (context: any) => {
           const countStr = context.adapter.getQueryParam ? context.adapter.getQueryParam("count") : undefined;
           const count = typeof countStr === "string" ? parseInt(countStr) : 1;
           const price = ECHO_CONFIG.priceUsdcMicro * (isNaN(count) || count <= 0 ? 1 : count);
-          return price.toString();
+          return {
+            asset: "31566704",
+            amount: price.toString()
+          };
         },
         network: ALGORAND_MAINNET_CAIP2 as Network,
       },
@@ -79,12 +157,14 @@ export const routesConfig = {
       {
         scheme: "exact",
         payTo: ECHO_CONFIG.receiverAddress,
-        asset: "10458941", // Testnet USDC
         price: (context: any) => {
           const countStr = context.adapter.getQueryParam ? context.adapter.getQueryParam("count") : undefined;
           const count = typeof countStr === "string" ? parseInt(countStr) : 1;
           const price = ECHO_CONFIG.priceUsdcMicro * (isNaN(count) || count <= 0 ? 1 : count);
-          return price.toString();
+          return {
+            asset: "10458941",
+            amount: price.toString()
+          };
         },
         network: ALGORAND_TESTNET_CAIP2 as Network,
       }
