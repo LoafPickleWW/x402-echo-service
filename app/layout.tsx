@@ -16,7 +16,12 @@ export const metadata: Metadata = {
   title: "wen.tools ping bot",
   description: "x402 ping bot for wen.tools",
   icons: {
-    icon: "/social-icon-2.png",
+    icon: [
+      { url: "/icon.png" },
+      { url: "/favicon.ico" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
   },
 };
 
